@@ -204,8 +204,8 @@ time około 7 min
     
 2. Podział na paczki:
     
-    
-        var res = db.runCommand({splitVector: "pl_wikipedia.wikipedia", keyPattern: {_id: 1}, maxChunkSizeBytes: 4 * 1024 *1024 * 1024 });
+
+    var res = db.runCommand({splitVector: "pl_wikipedia.wikipedia", keyPattern: {_id: 1}, maxChunkSizeBytes: 4 * 1024 *1024 * 1024 });
     
     
 3. Funkcja odpalana w wątkach:
@@ -227,7 +227,6 @@ time około 7 min
                     }
                 },
                 reduce: function (key, values) { return Array.sum(values); },
-    
                 out: { replace: "mrout" + id, db: "mrdb" + id },
                 sort: {_id: -1},
                 query: { _id: { $lt: id} },
