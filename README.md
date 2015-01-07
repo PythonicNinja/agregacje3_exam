@@ -98,22 +98,30 @@ zbuduje aplikacje wyszukującą anagramy w czasie rzeczywistym, najpierw pobrał
     
 1. zamiany kodowania z win-1250 na utf-8:
 
-    >> time iconv -f CP1250 -t utf-8 odm.txt > odm_utf-8.txt
+
+    >time iconv -f CP1250 -t utf-8 odm.txt > odm_utf-8.txt
+    
     real	0m0.988s
     user	0m0.860s
     sys	0m0.111s
     
+
 2. usunięcia "," zastąpienia ich znakiem nowej linni.
 
-    >> time cat odm_utf-8.txt | tr -d " "  | tr "," "\n" > odm.csv
+
+    > time cat odm_utf-8.txt | tr -d " "  | tr "," "\n" > odm.csv
+    
     real	0m7.668s
     user	0m14.790s
     sys	0m0.229s
 
+
 3. baza ma słów
     
-    >> cat odm.csv | wc -l 
+    
+    > cat odm.csv | wc -l 
     3 827 632
+
 
 #####Import
 
@@ -168,6 +176,7 @@ time około 7 min
 
 
     > time node index.js plwiki-20141228-pages-articles-multistream.xml
+    
     =================done========
     real    288m21.964s
     user    257m31.175s
@@ -183,9 +192,45 @@ time około 7 min
     Istnieje obejście tego problemu poprzez załadowanie
 
     >> curl -O https://raw.githubusercontent.com/mongodb/mongo/master/jstests/libs/parallelTester.js
+
+1. Załadowanie ScopedThread
+
+    > // curl -O https://raw.githubusercontent.com/mongodb/mongo/master/jstests/libs/parallelTester.js
+        load("parallelTester.js");
     
     
-1. odpalenie
+2. Podział na paczki:
+    
+    > var res = db.runCommand({splitVector: "pl_wikipedia.wikipedia", keyPattern: {_id: 1}, maxChunkSizeBytes: 4 * 1024 *1024 * 1024 });
+    
+3. Funkcja odpalana w wątkach:
+
+
+    > var mapred = function(id, page) {
+        return db.runCommand({
+                mapreduce: "wikipedia",
+                map: function () {
+                    if(this.hasOwnProperty('text')) {
+                        var words = [];
+                        for (var name_text in this.text) {
+                            for (var i = 0; i < this.text[name_text].length; i++) {
+                                words = words.concat(this.text[name_text][i].text.split(' '));
+                            }
+                        }
+                        for (var i = 0; i <= words.length; i++)
+                            emit(words[i], 1);
+                    }
+                },
+                reduce: function (key, values) { return Array.sum(values); },
+    
+                out: { replace: "mrout" + id, db: "mrdb" + id },
+                sort: {_id: -1},
+                query: { _id: { $lt: id} },
+                limit: page
+            })
+        };
+    
+4. odpalenie
 
     >> load("map_reduce.js");
     2015-01-05T14:56:28.966+0100 I CONTROL  [initandlisten]
@@ -201,13 +246,14 @@ time około 7 min
     connecting to: pl_wikipedia
     
     
-2. Liczba emitów:
+5. Analiza:
 
+    Liczba emitów
 
 ![paraller_emits](wikipedia/images/paraller_emits.png)
 
 
-3. Faktycznie zużyte są wszystkie rdzenie logiczne i fizyczne.
+    Faktycznie zużyte są wszystkie rdzenie logiczne i fizyczne.
 
 ![paraller_performance](wikipedia/images/paraller_performance.png)
 
