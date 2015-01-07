@@ -145,7 +145,7 @@ db.words.mapReduce(
 ```
 time około 7 min
 
-![single_thread_map_reduce](anagrams/images/single_thread_map_reduce.png)
+![single_thread_map_reduce](anagram/images/single_thread_map_reduce.png)
 
 
 ###wyszukają najczęściej występujące słowa z Wikipedia data PL aktualny plik z artykułami, ok. 1.3 GB
