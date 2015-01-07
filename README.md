@@ -1,8 +1,5 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
-**Spis treści**
-
 **Table of Contents**  *generated with [DocToc](http://doctoc.herokuapp.com/)*
 
 - [Wojciech Nowak](#wojciech-nowak)
@@ -17,7 +14,8 @@
         - [Map reduce anagram list](#map-reduce-anagram-list)
     - [wyszukają najczęściej występujące słowa z Wikipedia data PL aktualny plik z artykułami, ok. 1.3 GB](#wyszukają-najczęściej-występujące-słowa-z-wikipedia-data-pl-aktualny-plik-z-artykułami-ok-13-gb)
       - [import](#import)
-      - [map reduce](#map-reduce)
+      - [Map Reduce  w wersji zoptymalizowanej na wiele wątków.](#map-reduce--w-wersji-zoptymalizowanej-na-wiele-wątków)
+        - [ScopedThread](#scopedthread)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -69,7 +67,7 @@ komenda importu:
     user    0m0.059s
     sys     0m0.016s
 
-komenda wstępna map reduce
+komenda wstępna map reduce bez ScopedThread, którego użyjemy do importu wikiepdii.
 
 ```js
 db.Words.mapReduce(
@@ -91,8 +89,8 @@ db.Words.mapReduce(
 );
 ```
 
-doszedłem do wniosku, że mogę korzystając z zalet frameworka meteor oraz łatwego dostępu do więszej bazy polskich słów
- [jak http://sjp.pl/slownik/odmiany/](http://sjp.pl/slownik/odmiany/) 
+doszedłem do wniosku, że mogę korzystając z frameworka meteor oraz łatwego dostępu do więszej bazy polskich słów
+[jak http://sjp.pl/slownik/odmiany/](http://sjp.pl/slownik/odmiany/) 
 
 zbuduje aplikacje wyszukującą anagramy w czasie rzeczywistym, najpierw pobrałem baze jednak wymaga
 
@@ -118,7 +116,8 @@ zbuduje aplikacje wyszukującą anagramy w czasie rzeczywistym, najpierw pobrał
     3 827 632
 
 #####Import
-zajmiemy się importem do mongodb meteor js
+
+1. zajmiemy się importem do mongodb meteor js
 
     >> time mongoimport -h localhost:3001 -d meteor -c words -f word --type csv --file odm.csv 
     2015-01-06T01:32:21.502+0100	imported 3827632 documents
@@ -145,7 +144,9 @@ db.words.mapReduce(
 );
 ```
 time około 7 min
-ZDJĘCIE
+
+![single_thread_map_reduce](anagrams/images/single_thread_map_reduce.png)
+
 
 ###wyszukają najczęściej występujące słowa z Wikipedia data PL aktualny plik z artykułami, ok. 1.3 GB
 
@@ -153,27 +154,33 @@ ZDJĘCIE
 
 1. Pobranie xml'a (38mb, couple minutes)
 
-    >> wget http://dumps.wikimedia.org/plwiki/20141228/plwiki-20141228-pages-articles-multistream.xml.bz2
+
+    > wget http://dumps.wikimedia.org/plwiki/20141228/plwiki-20141228-pages-articles-multistream.xml.bz2
+
 
 2. unzip it (180mb, couple seconds)
 
-    >> bunzip2 ./plwiki-20141228-pages-articles-multistream.xml.bz2
+
+    > bunzip2 ./plwiki-20141228-pages-articles-multistream.xml.bz2
+
 
 3. load it into mongo
 
-    >> time node index.js plwiki-20141228-pages-articles-multistream.xml
-    =================done========
 
+    > time node index.js plwiki-20141228-pages-articles-multistream.xml
+    =================done========
     real    288m21.964s
     user    257m31.175s
     sys     6m15.147s
+
     
-####map reduce
+####Map Reduce  w wersji zoptymalizowanej na wiele wątków.
 
-niestety ScopedThread został usunięty w wersji 2.6, ponieważ był on tylko używany do pisania testów
-https://jira.mongodb.org/browse/SERVER-13485
+##### ScopedThread
+    niestety ScopedThread został usunięty w wersji 2.6, ponieważ był on tylko używany do pisania testów
+    https://jira.mongodb.org/browse/SERVER-13485
 
-Istnieje obejście tego problemu poprzez załadowanie
+    Istnieje obejście tego problemu poprzez załadowanie
 
     >> curl -O https://raw.githubusercontent.com/mongodb/mongo/master/jstests/libs/parallelTester.js
     
@@ -192,3 +199,15 @@ Istnieje obejście tego problemu poprzez załadowanie
     connecting to: pl_wikipedia
     connecting to: pl_wikipedia
     connecting to: pl_wikipedia
+    
+    
+2. Liczba emitów:
+
+
+![paraller_emits](wikipedia/images/paraller_emits.png)
+
+
+3. Faktycznie zużyte są wszystkie rdzenie logiczne i fizyczne.
+
+![paraller_performance](wikipedia/images/paraller_performance.png)
+
