@@ -195,18 +195,23 @@ time około 7 min
 
 1. Załadowanie ScopedThread
 
-    > // curl -O https://raw.githubusercontent.com/mongodb/mongo/master/jstests/libs/parallelTester.js
+
+        // curl -O https://raw.githubusercontent.com/mongodb/mongo/master/jstests/libs/parallelTester.js
+    
+    
         load("parallelTester.js");
     
     
 2. Podział na paczki:
     
-    > var res = db.runCommand({splitVector: "pl_wikipedia.wikipedia", keyPattern: {_id: 1}, maxChunkSizeBytes: 4 * 1024 *1024 * 1024 });
+    
+        var res = db.runCommand({splitVector: "pl_wikipedia.wikipedia", keyPattern: {_id: 1}, maxChunkSizeBytes: 4 * 1024 *1024 * 1024 });
+    
     
 3. Funkcja odpalana w wątkach:
 
 
-    > var mapred = function(id, page) {
+    var mapred = function(id, page) {
         return db.runCommand({
                 mapreduce: "wikipedia",
                 map: function () {
@@ -228,32 +233,33 @@ time około 7 min
                 query: { _id: { $lt: id} },
                 limit: page
             })
-        };
+    };
     
 4. odpalenie
 
-    >> load("map_reduce.js");
-    2015-01-05T14:56:28.966+0100 I CONTROL  [initandlisten]
-    id:54aca1cc2c9d2a4b4ea38e9f
-    id:54acad102c9d2a4b4ea75f30
-    id:54acb9692c9d2a4b4eab2fc1
-    id:54acc5b22c9d2a4b4eaf0053
-    id:54accfdf2c9d2a4b4eb2d0e4
-    connecting to: pl_wikipedia
-    connecting to: pl_wikipedia
-    connecting to: pl_wikipedia
-    connecting to: pl_wikipedia
-    connecting to: pl_wikipedia
+
+        >> load("map_reduce.js");
+        2015-01-05T14:56:28.966+0100 I CONTROL  [initandlisten]
+        id:54aca1cc2c9d2a4b4ea38e9f
+        id:54acad102c9d2a4b4ea75f30
+        id:54acb9692c9d2a4b4eab2fc1
+        id:54acc5b22c9d2a4b4eaf0053
+        id:54accfdf2c9d2a4b4eb2d0e4
+        connecting to: pl_wikipedia
+        connecting to: pl_wikipedia
+        connecting to: pl_wikipedia
+        connecting to: pl_wikipedia
+        connecting to: pl_wikipedia
     
     
 5. Analiza:
 
-    Liczba emitów
+        Liczba emitów
 
 ![paraller_emits](wikipedia/images/paraller_emits.png)
 
 
-    Faktycznie zużyte są wszystkie rdzenie logiczne i fizyczne.
+        Faktycznie zużyte są wszystkie rdzenie logiczne i fizyczne.
 
 ![paraller_performance](wikipedia/images/paraller_performance.png)
 
